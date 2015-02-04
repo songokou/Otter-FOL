@@ -1,0 +1,92 @@
+%hw8 by Ze Li, zli48, 676755673
+%to solve a crime scene using Otter
+% run in command line using 
+% $ path/bin/otter <zli48.in> zli48.out
+% the path should be where your Otter-3.3f is.
+set(auto).
+formula_list(usable).
+Room(K).
+Room(D).
+Room(C).
+Suspect(G).
+Suspect(M).
+Weapon(KN).
+Time(SPM).
+Time(MID).
+
+all x (Weapon(x) -> (x = KN)).
+all x (Room(x) -> (x = K | x = D | x = C)).
+all x (Suspect(x) -> (x = G | x = M )).
+all x (Time(x) -> (x=SPM | x=MID)).
+
+all x (Suspect(x) <-> -Weapon(x) & -Room(x) & -Time(x)).
+all x (Weapon(x) <-> -Suspect(x) & -Room(x) & -Time(x)).
+all x (Room(x) <-> -Weapon(x) & -Suspect(x) & -Time(x)).
+all x (Time(x) <-> -Weapon(x) & -Room(x) & -Suspect(x)).
+
+-Suspect(L).
+-Suspect(K).
+-Suspect(D).
+-Suspect(C).
+-Suspect(KN).
+-Suspect(SPM).
+-Suspect(MID).
+
+unequal(M,G).
+unequal(M,D).
+unequal(M,K).
+unequal(M,C).
+unequal(M,KN).
+unequal(M,SPM).
+unequal(M,MID).
+
+unequal(G,D).
+unequal(G,K).
+unequal(G,C).
+unequal(G,KN).
+unequal(G,SPM).
+unequal(G,MID).
+
+unequal(D,K).
+unequal(D,C).
+unequal(D,KN).
+unequal(D,SPM).
+unequal(D,MID).
+
+unequal(K,C).
+unequal(K,KN).
+unequal(K,SPM).
+unequal(K,MID).
+
+unequal(C,KN).
+unequal(C,SPM).
+unequal(C,MID).
+
+unequal(KN,SPM).
+unequal(KN,MID).
+
+unequal(SPM,MID).
+
+all x y (unequal(x,y) <-> unequal(y,x)).
+
+all x y z u (unequal(x,y) & Suspect(x) & Victim(y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> Murderer(x)).
+
+all x y z u (Suspect(x) & Suspect(y) & unequal(x,y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> See(y,x,u)).
+
+all x y (Suspect(x) & Time(y) & Dead(x,y) -> Victim(x)).
+
+all x y z u (Weapon(x) & Victim(y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> MWeapon(x)).
+
+all z ( InRoom(G,z,SPM) -> InRoom(KN,z,SPM)).
+
+all x (Time(x) -> InRoom(KN,K,x)).
+
+InRoom(M,K,SPM).
+
+all x (Suspect(x) & See(x,M,SPM) -> Dead(M,SPM)).
+
+-(exists x y z u v (-$ANSWER(Murderer(x)) & -$ANSWER(Victim(y)) & -$ANSWER(MWeapon(z)) & -$ANSWER(Room(u))
+					& Murderer(x) & Victim(y) & MWeapon(z) & Room(u) & Time(v) & InRoom(x,u,v) & InRoom(y,u,v))).
+
+end_of_list.
+										

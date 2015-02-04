@@ -1,0 +1,134 @@
+%hw8 by Ze Li, zli48, 676755673
+%to solve a crime scene using Otter
+% run in command line using 
+% $ path/bin/otter <zli48.in> zli48.out
+% the path should be where your Otter-3.3f is.
+set(auto).
+
+formula_list(usable).
+
+
+exists x Suspect(x).
+exists x Murderer(x).
+exists x Victim(x).
+exists x Weapon(x).
+exists x MWeapon(x).
+exists x Room(x).%added 
+exists x Time(x).%added
+
+exists x D(x).%Dining room
+exists x C(x).%Conservatory
+exists x L(x).%Library
+exists x K(x).%Kitchen
+all x (D(x) -> Room(x) & -Suspect(x) & -Weapon(x) & -Time(x) & -C(x) & -L(x) & -K(x)).
+all x (L(x) -> Room(x) & -Suspect(x) & -Weapon(x) & -Time(x) & -D(x) & -C(x) & -K(x)).
+all x (K(x) -> Room(x) & -Suspect(x) & -Weapon(x) & -Time(x) & -D(x) & -L(x) & -C(x)).
+all x (C(x) -> Room(x) & -Suspect(x) & -Weapon(x) & -Time(x) & -D(x) & -L(x) & -K(x)).
+
+exists x W(x).%Mr White
+exists x S(x).%Scarlet
+exists x M(x).%Colonel Mustard
+exists x G(x).%Green
+
+all x (W(x) -> Suspect(x) & -Room(x) & -Weapon(x) & -Time(x) & -S(x) & -G(x) & -M(x)).
+all x (S(x) -> Suspect(x) & -Room(x) & -Weapon(x) & -Time(x) & -W(x) & -G(x) & -M(x)).
+all x (G(x) -> Suspect(x) & -Room(x) & -Weapon(x) & -Time(x) & -W(x) & -S(x) & -M(x)).
+all x (M(x) -> Suspect(x) & -Room(x) & -Weapon(x) & -Time(x) & -W(x) & -S(x) & -G(x)).
+all x (Murderer(x) -> Suspect(x)).
+all x (Victim(x) -> Suspect(x)).
+
+exists x RE(x).%revolver
+exists x RO(x).%Rope
+exists x KN(x).%Knife
+exists x PI(x).%Lead pipe
+all x (RE(x) -> Weapon(x) & -Room(x) & -Suspect(x) & -Time(x) & -RO(x) & -KN(x) & -PI(x)).
+all x (RO(x) -> Weapon(x) & -Room(x) & -Suspect(x) & -Time(x) & -RE(x) & -KN(x) & -PI(x)).
+all x (KN(x) -> Weapon(x) & -Room(x) & -Suspect(x) & -Time(x) & -RE(x) & -RO(x) & -PI(x)).
+all x (PI(x) -> Weapon(x) & -Room(x) & -Suspect(x) & -Time(x) & -RE(x) & -RO(x) & -KN(x)).
+all x (MWeapon(x) -> Weapon(x)).
+
+exists x Six(x).
+exists x Mid(x).
+all x (Six(x) -> Time(x)).
+all x (Mid(x) -> Time(x)).
+
+%defined on rooms and suspects
+all x y z (See(x,y,z) <-> See(y,x,z)).
+all x y (W(x) & (S(y) | G(y) | M(y)) -> unequal(x,y)).
+all x y (S(x) & (W(y) | G(y) | M(y)) -> unequal(x,y)).
+all x y (G(x) & (S(y) | W(y) | M(y)) -> unequal(x,y)).
+all x y (M(x) & (S(y) | G(y) | W(y)) -> unequal(x,y)).
+all x y (D(x) & (L(y) | K(y) | C(y)) -> unequal(x,y)).
+all x y (L(x) & (D(y) | K(y) | C(y)) -> unequal(x,y)).
+all x y (K(x) & (L(y) | D(y) | C(y)) -> unequal(x,y)).
+all x y (C(x) & (L(y) | K(y) | D(y)) -> unequal(x,y)).
+all x y (unequal(x,y) <-> unequal(y,x)).
+
+%describing the crime scene
+all x y (Adjacent(x,y) <-> Adjacent(y,x)).
+all x y (D(x) & C(y) -> Adjacent(x,y)).
+all x y (D(x) & L(y) -> Adjacent(x,y)).
+all x y (K(x) & L(y) -> Adjacent(x,y)).
+all x y (K(x) & C(y) -> Adjacent(x,y)).
+
+%if a suspect is not the victim, then the suspect was in a different room at each of the two times
+%all x y u (-Victim(x) & (Six(u) | Mid(u)) & K(y) -> -InRoom(x,y,u)).
+all x y z (Suspect(x) & -Victim(x) & (Six(z) | Mid(z)) & K(y) -> -InRoom(x,y,z)).
+
+%every suspect who was alive at midnight was also alive at 6pm
+all x y u (Suspect(x) & Mid(y) & -Dead(x,y) & Six(u) -> -Dead(x,u)).
+
+%the murderer is one of the suspects who was alive at midnight
+all x y ( Murderer(x) & Mid(y) -> -Dead(x,y)).
+
+%the victim did not change room after being murdered
+all x y u (Victim(x) & K(y) & Mid(u) -> InRoom(x,y,u)).
+
+exists x (Murderer(x) -> Suspect(x)).	%1 one of the suspects is the murderer
+exists x (Victim(x) -> Suspect(x)).		%2 one of the suspects is the victim
+all x (Murderer(x) -> -Victim(x)).		%3 the crime is not a suicide
+										
+										%4 the murder took place at either 6pm or midnight
+all x y (Victim(x) & Time(y) & Killed(x,y) -> (Six(y) | Mid(y))).	
+										
+										%5 if a suspect is in the same room with the victim at the same time, 
+										%  then the suspect is the murderer
+all x y z u (Suspect(x) & Victim(y) & unequal(x,y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> Murderer(x)).
+										
+										%6 if two suspects are in the same room at the same time
+										%	then they can see each other
+all x y z u (Suspect(x) & Suspect(y) & unequal(x,y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> See(y,x,u)).
+										
+										%7 the dead suspect is the victim
+all x y (Suspect(x) & Time(y) & Dead(x,y) -> Victim(x)).
+										
+										%8 any weapon that is in the same room with the victim is the murder weapon
+all x y z u (Weapon(x) & Victim(y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> MWeapon(x)).
+										
+										%9 Mr Green was in the same room as the knife at 6pm, 
+										%and was in the Conservatory at midnight
+all x y z u (KN(x) & G(y) & Room(z) & Six(u) & InRoom(x,z,u) -> InRoom(y,z,u)).
+
+										%10 Knives are always kept in the kitchen
+all x y z (KN(x) & K(y) & Time(z) -> InRoom(x,y,z)).
+										
+										%11 Ms Scarlet was never in the same room with any other suspect
+all x y z u (S(x) & Suspect(y) & unequal(x,y) & Room(z) & Time(u) & InRoom(x,z,u) -> -InRoom(y,z,u)).
+
+										%12 Colonel Mustard always goes to the Kitchen at 6pm
+all x y z (M(x) & K(y) & Six(z) -> InRoom(x,y,z)).
+										
+										%13 Mrs. White left the dining room at 6pm, but did not go into the Conservatory
+all x y z (W(x) & Room(y) & Six(z) & InRoom(x,y,z) -> (-D(x) & -C(x))).
+										
+										%14 If a suspect saw Colonel Mustard at 6pm, 
+										% then Colonel Mustard was dead at 6pm
+all x y z (Suspect(x) & M(y) & Six(z) & See(x,y,z) -> Dead(y,z)).
+										
+										%15 Nothing can be in two places at one time
+all x y z u ((Suspect(x) | Weapon(x)) & Room(y) & Time(z) & Room(u) & unequal(y,u) & InRoom(x,y,z) -> -InRoom(x,u,z)). 
+
+%answer literals, should negate first
+-(exists x y z u v (-$ANSWER(Murderer(x)) & -$ANSWER(Victim(y)) & -$ANSWER(MWeapon(z)) & -$ANSWER(Room(u))
+					& Murderer(x) & Victim(y) & MWeapon(z) & Room(u) & Time(v) & InRoom(x,u,v) & InRoom(y,u,v))).
+end_of_list.

@@ -1,0 +1,111 @@
+%hw8 by Ze Li, zli48, 676755673
+%to solve a crime scene using Otter
+% run in command line using 
+% $ path/bin/otter <zli48.in> zli48.out
+% the path should be where your Otter-3.3f is.
+set(auto).
+
+formula_list(usable).
+
+exists x Suspect(x).
+exists x Murderer(x).
+exists x Victim(x).
+exists x Weapon(x).
+exists x MWeapon(x).
+exists x Room(x).%added 
+exists x Time(x).%added
+
+all x (Room(x) -> (x = D| x=C | x = L | x = K)).
+Room(D) & -Suspect(D) & -Weapon(D) & Time(D).
+Room(C) & -Suspect(C) & -Weapon(C) & Time(C).
+Room(L) & -Suspect(L) & -Weapon(L) & Time(L).
+Room(K) & -Suspect(K) & -Weapon(K) & Time(K).
+
+all x (Suspect(x) -> (x = W| x=S | x = G| x =M)).
+all x (Murderer(x) -> (x = W| x=S | x = G| x =M)).
+all x (Victim(x) -> (x = W| x=S | x = G| x =M)).
+
+Suspect(W) & -Room(W) & -Weapon(W) & -Time(W) .
+Suspect(S) & -Room(S) & -Weapon(S) & -Time(S).
+Suspect(G) & -Room(G) & -Weapon(G) & -Time(G).
+Suspect(M) & -Room(M) & -Weapon(M) & -Time(M).
+all x (Murderer(x) -> Suspect(x)).
+all x (Victim(x) -> Suspect(x)).
+
+all x (Weapon(x) -> (x = RE|x = RO | x = KN | x = PI)).
+all x (MWeapon(x) -> (x = RE|x = RO | x = KN | x = PI)).
+
+Weapon(RE) & -Room(RE) & -Suspect(RE) & -Time(RE) & RE!=RO & RE!=KN & RE!=PI.
+Weapon(RO) & -Room(RO) & -Suspect(RO) & -Time(RO) & RO!=RE & RO!=KN & RO!=PI.
+Weapon(KN) & -Room(KN) & -Suspect(KN) & -Time(KN) & KN!=RE & KN!=RO & KN!=PI.
+Weapon(PI) & -Room(PI) & -Suspect(PI) & -Time(PI) & PI!=RE & PI!=RO & PI!=KN.
+
+all x (MWeapon(x) -> Weapon(x)).
+
+Time(SPM) & -Weapon(SPM) & -Room(SPM) & -Suspect(SPM) & SPM!=MID.
+Time(MID) & -Weapon(MID) & -Room(MID) & -Suspect(MID) & MID!=SPM.
+
+
+%defined on rooms and suspects
+all x y z (See(x,y,z) <-> See(y,x,z)).
+unequal(W,S).
+unequal(W,G).
+unequal(W,M).
+unequal(S,G).
+unequal(S,M).
+unequal(G,M).
+
+unequal(D,L).
+unequal(D,K).
+unequal(D,C).
+unequal(L,K).
+unequal(L,C).
+unequal(K,C).
+
+all x y (unequal(x,y) <-> unequal(y,x)).
+										
+										%4 the murder took place at either 6pm or midnight
+all x y (Victim(x) & Time(y) & Killed(x,y) -> (y = SPM | y = MID)).	
+										
+										%5 if a suspect is in the same room with the victim at the same time, 
+										%  then the suspect is the murderer
+all x y z u (Suspect(x) & Victim(y) & unequal(x,y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> Murderer(x)).
+										
+										%6 if two suspects are in the same room at the same time
+										%	then they can see each other
+all x y z u (Suspect(x) & Suspect(y) & unequal(x,y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> See(y,x,u)).
+										
+										%7 the dead suspect is the victim
+all x y (Suspect(x) & Time(y) & Dead(x,y) -> Victim(x)).
+										
+										%8 any weapon that is in the same room with the victim is the murder weapon
+all x y z u (Weapon(x) & Victim(y) & Room(z) & Time(u) & InRoom(x,z,u) & InRoom(y,z,u) -> MWeapon(x)).
+										
+										%9 Mr Green was in the same room as the knife at 6pm, 
+										%and was in the Conservatory at midnight
+all x (Room(x)& InRoom(G,x,SPM) -> InRoom(KN,x,SPM)).
+
+										%10 Knives are always kept in the kitchen
+all x (Time(x) -> InRoom(KN,K,x)).
+										
+										%11 Ms Scarlet was never in the same room with any other suspect
+all y z u (Suspect(y) & unequal(S,y) & Room(z) & Time(u) & InRoom(S,z,u) -> -InRoom(y,z,u)).
+
+										%12 Colonel Mustard always goes to the Kitchen at 6pm
+%all z ( & Six(z) -> InRoom(x,K,z)).
+InRoom(M,K,SPM).
+										
+										%13 Mrs. White left the dining room at 6pm, but did not go into the Conservatory
+all y (Room(y) & InRoom(W,y,SPM) -> (y!=D & y!=C)).
+										
+										%14 If a suspect saw Colonel Mustard at 6pm, 
+										% then Colonel Mustard was dead at 6pm
+all x (Suspect(x)& See(x,M,SPM) -> Dead(M,SPM)).
+										
+										%15 Nothing can be in two places at one time
+all x y z u ((Suspect(x) | Weapon(x)) & Room(y) & Time(z) & Room(u) & unequal(y,u) & InRoom(x,y,z) -> -InRoom(x,u,z)). 
+
+%answer literals, should negate first
+-(exists x y z u v (-$ANSWER(Murderer(x)) & -$ANSWER(Victim(y)) & -$ANSWER(MWeapon(z)) & -$ANSWER(Room(u))
+					& Murderer(x) & Victim(y) & MWeapon(z) & Room(u) & Time(v) & InRoom(x,u,v) & InRoom(y,u,v))).
+end_of_list.
